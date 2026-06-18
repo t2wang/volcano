@@ -26,12 +26,15 @@ host files under the directory `/etc/volcano/`.
 * A headless service whose name is the same with job will be created.
 * If `disable-network-policy` is set to be false, a `NetworkPolicy` object with the type `Ingress` will be created for
 the job.
+* If `inject-hosts-env` is set to be false, hosts env variables including `VC_%s_HOSTS` and `VC_%s_NUM` will not be injected
+into pod containers; hosts information will still be accessible via the mounted ConfigMap files under `/etc/volcano/`.
 
 ## Arguments
-| ID  | Name                          | Value           | Default Value | Required | Description                                          | Example                                       |
-|-----|-------------------------------|-----------------|---------------|----------|------------------------------------------------------|-----------------------------------------------|
-| 1   | `publish-not-ready-addresses` | `true`/`false`  | `false`       | N        | whether publish the pod address when it is not ready | svc: ["--publish-not-ready-addresses=true"]   |
-| 2   | `disable-network-policy`      | `true`/`false`  | `false`       | N        | whether disable network policy for the job           | svc: ["--disable-network-policy=true"]        |
+| ID | Name                          | Value           | Default Value | Required | Description                                           | Example                                     |
+|----|-------------------------------|-----------------|---------------|----------|-------------------------------------------------------|---------------------------------------------|
+| 1  | `publish-not-ready-addresses` | `true`/`false`  | `false`       | N        | whether publish the pod address when it is not ready  | svc: ["--publish-not-ready-addresses=true"] |
+| 2  | `disable-network-policy`      | `true`/`false`  | `false`       | N        | whether disable network policy for the job            | svc: ["--disable-network-policy=true"]      |
+| 3  | `inject-hosts-env`            | `true`/`false`  | `true`        | N        | whether inject the hosts environment variables        | svc: ["--inject-hosts-env=true"]            |
 
 ## Examples
 ```yaml
@@ -44,7 +47,7 @@ spec:
   schedulerName: volcano
   plugins:
     env: []
-    svc: ["--publish-not-ready-addresses=false", "--disable-network-policy=false"]  ## SVC plugin register
+    svc: ["--publish-not-ready-addresses=false", "--disable-network-policy=false", "--inject-hosts-env=true"]  ## SVC plugin register
   policies:
     - event: PodEvicted
       action: RestartJob
