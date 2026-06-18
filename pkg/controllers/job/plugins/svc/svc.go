@@ -44,11 +44,12 @@ type servicePlugin struct {
 	// flag parse args
 	publishNotReadyAddresses bool
 	disableNetworkPolicy     bool
+	injectHostsEnv           bool
 }
 
 // New creates service plugin.
 func New(client pluginsinterface.PluginClientset, arguments []string) pluginsinterface.PluginInterface {
-	servicePlugin := servicePlugin{pluginArguments: arguments, Clientset: client}
+	servicePlugin := servicePlugin{pluginArguments: arguments, Clientset: client, injectHostsEnv: true}
 
 	servicePlugin.addFlags()
 
@@ -62,9 +63,10 @@ func (sp *servicePlugin) Name() string {
 func (sp *servicePlugin) addFlags() {
 	flagSet := flag.NewFlagSet(sp.Name(), flag.ContinueOnError)
 	flagSet.BoolVar(&sp.publishNotReadyAddresses, "publish-not-ready-addresses", sp.publishNotReadyAddresses,
-		"set publishNotReadyAddresses of svc to true")
+		"set publishNotReadyAddresses of svc to false")
 	flagSet.BoolVar(&sp.disableNetworkPolicy, "disable-network-policy", sp.disableNetworkPolicy,
-		"set disableNetworkPolicy of svc to true")
+		"set disableNetworkPolicy of svc to false")
+	flagSet.BoolVar(&sp.injectHostsEnv, "inject-hosts-env", sp.injectHostsEnv, "set injectHostsEnv of svc to true")
 
 	if err := flagSet.Parse(sp.pluginArguments); err != nil {
 		klog.Errorf("plugin %s flagset parse failed, err: %v", sp.Name(), err)
@@ -110,12 +112,14 @@ func (sp *servicePlugin) OnPodCreate(pod *v1.Pod, job *batch.Job) error {
 		)
 	}
 
-	for i := range pod.Spec.Containers {
-		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, hostEnv...)
-	}
+	if sp.injectHostsEnv {
+		for i := range pod.Spec.Containers {
+			pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, hostEnv...)
+		}
 
-	for i := range pod.Spec.InitContainers {
-		pod.Spec.InitContainers[i].Env = append(pod.Spec.InitContainers[i].Env, hostEnv...)
+		for i := range pod.Spec.InitContainers {
+			pod.Spec.InitContainers[i].Env = append(pod.Spec.InitContainers[i].Env, hostEnv...)
+		}
 	}
 
 	sp.mountConfigmap(pod, job)
